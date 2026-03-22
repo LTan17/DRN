@@ -52,7 +52,8 @@ typedef enum
 #define GYRO 0x43
 
 #define UCRL_RES 0x6A
-#define DIS_I2C 0x04
+#define DIS_I2C 0x10
+#define I2C_MST_EN 0x20
 
 #define POWMGMT_RES 0x6B
 #define H_RESET 0x80
@@ -63,7 +64,39 @@ typedef enum
 
 #define WHOAMI 0x75
 
+#define I2C_MST_CTRL 0x24
+typedef enum
+{
+    _400kHz = 13
+} I2C_MST_CLK_t;
+
+#define SLV0_ADDR 0x25
+#define SLV0_REG 0x26
+#define SLV0_DO 0x63
+#define SLV0_CTRL 0x27
+
+#define SLV4_ADDR 0x31
+#define SLV4_REG 0x32
+#define SLV4_DO 0x33
+#define SLV4_CTRL 0x34
+
+#define SLV_EN 0x80
+
+#define EXT_DATA 0x49
+
 #define SWAP_AXIS -1
+
+#define AK9863_ADDR 0x0F
+#define AK9863_READ_BIT 0x80
+
+#define AK9863_CTRL1 0x0A
+#define CONTINUOUS_2 0x06
+#define _16BIT_MODE 0x10
+
+#define AK9863_CTRL2 0x0B
+#define AK9863_RESET_BIT 0x01
+
+#define AK9863_MAG 0x03
 
 typedef struct
 {
@@ -101,3 +134,8 @@ static void MPU9250_WriteRes(uint8_t res, uint8_t *send_data, size_t size);
 
 static esp_err_t MPU9250_Transfer(const uint8_t *tx_buffer, uint8_t *rx_buffer, size_t length);
 static esp_err_t MPU9250_TransmitReceive(const uint8_t *tx_buffer, size_t tx_length, uint8_t *rx_buffer, size_t rx_length);
+
+static void MPU9250_MasterI2C_Enable(void);
+static void MPU9250_Set_MasterI2C_Clk(void);
+static void MPU9250_SetUpAK9863(void);
+esp_err_t MPU9250_ReadMag(vector_t *mag_data);

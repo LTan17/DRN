@@ -6,6 +6,8 @@
 #include "MPU9250.h"
 #include "Fusion.h"
 #include "math.h"
+#include "Wifi_Station.h"
+#include "app_mqtt.h"
 
 TaskHandle_t IMU_task_handle = NULL;
 
@@ -46,7 +48,7 @@ void IMU_task(void *parameter)
     int64_t now = 0, pre_time = 0;
     float dt = 0;
 
-    vector_t gyr, acc;
+    vector_t gyr, acc, mag;
     vector_t raw_angle;
     int count = 0;
 
@@ -62,17 +64,25 @@ void IMU_task(void *parameter)
         pre_time = now;
         MPU9250_ReadAccel(&acc);
         MPU9250_ReadGyro(&gyr);
+        MPU9250_ReadMag(&mag);
         raw_angle = process_imu_angles(acc, gyr, dt);
-        while ((count++) % 10 == 0)
-        {
-            printf(">dt:%.5f\n>gyrX:%.3f\n>gyrY:%.3f\n>gyrZ:%.3f\n",
-                   dt, gyr.x, gyr.y, gyr.z);
-            printf(">angleX:%.3f\n>angleY:%.3f\n>angleZ:%.3f\n", raw_angle.x, raw_angle.y, raw_angle.z);
-        }
+        // while ((count++) % 10 == 0)
+        // {
+        //     printf(">dt:%.5f\n>gyrX:%.3f\n>gyrY:%.3f\n>gyrZ:%.3f\n",
+        //            dt, gyr.x, gyr.y, gyr.z);
+        //     printf(">angleX:%.3f\n>angleY:%.3f\n>angleZ:%.3f\n", raw_angle.x, raw_angle.y, raw_angle.z);
+        // }
     }
 }
 
 void app_main(void)
 {
+    Wifi_Station_Init();
+    vTaskDelay(pdMS_TO_TICKS(10000));
+    MQTT_Init();
     xTaskCreate(IMU_task, "IMU_task", 4096, NULL, 15, &IMU_task_handle);
+    while (1)
+    {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
 }
