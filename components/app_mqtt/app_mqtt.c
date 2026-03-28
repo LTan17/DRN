@@ -1,8 +1,14 @@
 #include <stdio.h>
 #include "app_mqtt.h"
 #include "esp_log.h"
+#include "esp_wifi.h"
+#include "cJSON.h"
+#include "freertos/FreeRTOS.h"
 
-static const char *mqtt_url = "mqtt://192.168.2.7:1883";
+extern remote_t global_remote_msg;
+extern SemaphoreHandle_t global_remote_msg_mtx;
+
+static const char *mqtt_url = "mqtt://192.168.2.22:1883";
 static const char *TAG = "MQTT CLIENT";
 
 esp_mqtt_client_handle_t mqtt_client_handle = NULL;
@@ -26,7 +32,7 @@ static void mqtt_event(void *handler_args, esp_event_base_t base, int32_t event_
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");
         msg_id = esp_mqtt_client_subscribe(client, "lt17/drn/cmd", 0);
-        ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
+        ESP_LOGI(TAG, "sent subscribe successful to topic:\"lt17/drn/cmd\", msg_id=%d", msg_id);
         break;
 
     case MQTT_EVENT_DISCONNECTED:
@@ -38,9 +44,31 @@ static void mqtt_event(void *handler_args, esp_event_base_t base, int32_t event_
         break;
 
     case MQTT_EVENT_DATA:
-        ESP_LOGI(TAG, "MQTT_EVENT_DATA");
-        printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
-        printf("DATA=%.*s\r\n", event->data_len, event->data);
+        // ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+        // printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
+        // printf("DATA=%.*s\r\n", event->data_len, event->data);
+        int len = event->data_len < 127 ? event->data_len : 127;
+        char rx_data[128];
+        memcpy(rx_data, event->data, len);
+        rx_data[len] = '\0';
+
+        int throttle_target = 0;
+        float roll_target = 0.0f, pitch_target = 0.0f;
+        char *ptr;
+
+        if ((ptr = strstr(rx_data, "\"t\":")))
+            throttle_target = atoi(ptr + 4);
+        if ((ptr = strstr(rx_data, "\"r\":")))
+            roll_target = atof(ptr + 4);
+        if ((ptr = strstr(rx_data, "\"p\":")))
+            pitch_target = atof(ptr + 4);
+        if (xSemaphoreTake(global_remote_msg_mtx, pdMS_TO_TICKS(10)) == pdTRUE)
+        {
+            global_remote_msg.throttle = throttle_target;
+            global_remote_msg.pitch = pitch_target;
+            global_remote_msg.roll = roll_target;
+            xSemaphoreGive(global_remote_msg_mtx);
+        }
         break;
 
     case MQTT_EVENT_ERROR:
@@ -60,6 +88,16 @@ static void mqtt_event(void *handler_args, esp_event_base_t base, int32_t event_
     }
 }
 
+static void wifi_ip_event_handler(void *arg, esp_event_base_t event_base,
+                                  int32_t event_id, void *event_data)
+{
+    if (event_id == IP_EVENT_STA_GOT_IP)
+    {
+        ESP_LOGI("MQTT_COMP", "Đã nhận tín hiệu có IP, start MQTT");
+        esp_mqtt_client_start(mqtt_client_handle);
+    }
+}
+
 esp_err_t MQTT_Init()
 {
     esp_mqtt_client_config_t config = {
@@ -67,6 +105,8 @@ esp_err_t MQTT_Init()
     };
     mqtt_client_handle = esp_mqtt_client_init(&config);
     esp_mqtt_client_register_event(mqtt_client_handle, ESP_EVENT_ANY_ID, mqtt_event, NULL);
-    esp_mqtt_client_start(mqtt_client_handle);
+    esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP,
+                                        &wifi_ip_event_handler, NULL, NULL);
+    // esp_mqtt_client_start(mqtt_client_handle);
     return ESP_OK;
 }

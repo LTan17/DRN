@@ -9,6 +9,8 @@
 #define RESOLUTION 40000000 // 40MHz
 #define BAUD_RATE 300000    // DSHOT300
 
+#define RMT_SYMBOLS 48
+
 typedef struct
 {
     rmt_symbol_word_t bit_0;

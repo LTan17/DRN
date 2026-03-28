@@ -14,6 +14,7 @@ esp_err_t ESC_Init()
     RMT_TX_Init(controller.propeller2, PROPELLER2_PIN);
     RMT_TX_Init(controller.propeller3, PROPELLER3_PIN);
     RMT_TX_Init(controller.propeller4, PROPELLER4_PIN);
+    vTaskDelay(pdMS_TO_TICKS(5000));
     RMT_TX_InitEncoder();
     return err;
 }

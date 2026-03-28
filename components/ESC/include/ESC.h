@@ -2,10 +2,10 @@
 #include "RMT.h"
 #include "esp_log.h"
 
-#define PROPELLER1_PIN GPIO_NUM_16
-#define PROPELLER2_PIN GPIO_NUM_17
-#define PROPELLER3_PIN GPIO_NUM_18
-#define PROPELLER4_PIN GPIO_NUM_19
+#define PROPELLER1_PIN GPIO_NUM_3
+#define PROPELLER2_PIN GPIO_NUM_4
+#define PROPELLER3_PIN GPIO_NUM_5
+#define PROPELLER4_PIN GPIO_NUM_6
 
 #define CURRENT false
 
@@ -16,8 +16,6 @@ typedef struct
     propeller_handle_t propeller3;
     propeller_handle_t propeller4;
 } ESC_control_t;
-
-extern ESC_control_t controller;
 
 esp_err_t ESC_Init();
 esp_err_t ESC_Start();

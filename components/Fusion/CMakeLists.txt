@@ -1,3 +1,3 @@
 idf_component_register(SRCS "Fusion.c"
                     INCLUDE_DIRS "include"
-                    REQUIRES MPU9250)
+                    REQUIRES common_struct)

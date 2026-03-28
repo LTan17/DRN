@@ -33,7 +33,7 @@ dshot_frame_t RMT_TX_GetFrame(uint16_t new_throttle, bool IsTelemery)
 size_t RMT_TX_Callback(const void *data, size_t data_size, size_t symbols_written, size_t symbols_free,
                        rmt_symbol_word_t *symbols, bool *done, void *arg)
 {
-    if (symbols_free < 64)
+    if (symbols_free < RMT_SYMBOLS)
         return 0;
     uint16_t frame = *((uint16_t *)data);
     for (int i = 0; i < 16; i++)
@@ -48,12 +48,12 @@ size_t RMT_TX_Callback(const void *data, size_t data_size, size_t symbols_writte
             symbols[i] = dshot_symbols.bit_0;
         }
     }
-    for (int i = 16; i < 64; i++)
+    for (int i = 16; i < RMT_SYMBOLS; i++)
     {
         symbols[i] = dshot_symbols.bit_stop;
     }
     *done = true;
-    return 64;
+    return RMT_SYMBOLS;
 }
 
 esp_err_t RMT_TX_InitEncoder()
@@ -92,7 +92,7 @@ void RMT_TX_Init(propeller_handle_t propeller_handle, int PIN_NUM)
     propeller_handle->propeller_tx_channel_cfg.clk_src = RMT_CLK_SRC_DEFAULT;
     propeller_handle->propeller_tx_channel_cfg.gpio_num = PIN_NUM;
     propeller_handle->propeller_tx_channel_cfg.resolution_hz = RESOLUTION;
-    propeller_handle->propeller_tx_channel_cfg.mem_block_symbols = 64;
+    propeller_handle->propeller_tx_channel_cfg.mem_block_symbols = RMT_SYMBOLS;
     propeller_handle->propeller_tx_channel_cfg.trans_queue_depth = 10;
     propeller_handle->propeller_tx_channel_cfg.flags.invert_out = false;
     propeller_handle->propeller_tx_channel_cfg.flags.with_dma = false;
@@ -100,11 +100,17 @@ void RMT_TX_Init(propeller_handle_t propeller_handle, int PIN_NUM)
     ESP_ERROR_CHECK(rmt_enable(propeller_handle->propeller_channel));
     memset(&propeller_handle->propeller_tx_cfg, 0, sizeof(propeller_handle->propeller_tx_cfg));
     propeller_handle->propeller_tx_cfg.loop_count = -1;
+    printf("handler: %p\n", propeller_handle);
 }
 
 esp_err_t RMT_TX_Transmit(propeller_handle_t propeller_handle, uint16_t new_throttle, bool IsTelemery)
 {
     esp_err_t err;
+    if (propeller_handle == NULL)
+    {
+        ESP_LOGE(TAG, "Propeller_handle is null\n");
+        return ESP_FAIL;
+    }
     dshot_frame_t frame = RMT_TX_GetFrame(new_throttle, IsTelemery);
     uint16_t data = frame.val;
     ESP_ERROR_CHECK(rmt_disable(propeller_handle->propeller_channel));

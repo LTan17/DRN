@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "esp_err.h"
+#include "common_struct.h"
 
 #define CONFIG_RES 0x1A
 typedef enum
@@ -97,19 +98,6 @@ typedef enum
 #define AK9863_RESET_BIT 0x01
 
 #define AK9863_MAG 0x03
-
-typedef struct
-{
-    uint8_t H_data;
-    uint8_t L_data
-} raw_data;
-
-typedef struct
-{
-    float x;
-    float y;
-    float z;
-} vector_t;
 
 esp_err_t MPU9250_Init(void);
 esp_err_t MPU9250_ReadAccel(vector_t *accel_data);
